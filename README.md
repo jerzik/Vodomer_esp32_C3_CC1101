@@ -30,7 +30,8 @@ integrace musí být nejdříve připojena; tato doprovodná integrace nezíská
 - Funkční příjem rádiových zpráv a příslušnost studeného modulu `04840742` jsou potvrzené.
 - **Teplá voda `04846989` zůstává kandidátem ze štítku.** V dosavadních předaných
   výpisech nebyla potvrzena. Nulové AES klíče také zatím nejsou potvrzené dekódováním.
-- Podrobné výsledky softwarových kontrol jsou v [docs/VALIDATION.md](docs/VALIDATION.md).
+- Všech 22 testů, HACS, hassfest a kompilace ESPHome prošly také na GitHub Actions.
+  Podrobné výsledky softwarových kontrol jsou v [docs/VALIDATION.md](docs/VALIDATION.md).
   Nový firmware pro obě měřidla vyžaduje ověření příjmu a shody s mechanickými počítadly.
 
 ## Zapojení
@@ -115,8 +116,6 @@ Externí komponenta je připnutá na revizi
 firmware, kterou nejprve ověřte. HACS tuto komponentu v ESPHome nespravuje.
 
 ## 3. Instalace doprovodné integrace přes HACS
-
-Po zveřejnění repozitáře a release:
 
 1. **HACS → nabídka ⋮ → Vlastní repozitáře**.
 2. URL: `https://github.com/jerzik/Vodomer_esp32_C3_CC1101`; typ **Integrace**.

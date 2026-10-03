@@ -10,12 +10,12 @@ Kontroly provedené **3. 10. 2026** v odděleném pracovním prostředí.
 | Formátování | Ruff format: prošlo |
 | ESPHome konfigurace obou měřidel | ESPHome 2026.9.1: validní |
 | ESPHome diagnostická konfigurace | ESPHome 2026.9.1: validní |
-| Kompilace C3 firmware | ESP-IDF 5.5.5: **Successfully compiled program** |
+| Kompilace C3 firmware | ESP-IDF 5.5.5: **Successfully compiled program**, místně i na GitHub runneru |
 | Paměť | RAM 109 202 B / 321 296 B (34,0 %); aplikace 1 165 166 B / 1 835 008 B (63,5 %) |
 | Schéma | Vizuální kontrola všech 7 propojení, 3,3 V a nezapojeného GDO2 |
 | Ikony | PNG 256/512 px s alfa kanálem, tmavá varianta; ICO 16–256 px |
-| HACS a hassfest | Workflow připravené; vzdálené kontroly po prvním push ještě musí proběhnout |
-| Instalace přes HACS | Vyžaduje zveřejnění veřejného repozitáře a skutečného GitHub Release |
+| HACS a hassfest | **Obě kontroly prošly na GitHub Actions** |
+| Instalace přes HACS | Projekt se distribuuje jako vlastní veřejný repozitář HACS; instalaci v uživatelově HA je třeba ověřit |
 
 Testy používají skutečný runtime HA, načtenou integraci, konfigurační flow,
 registry zařízení a entit a události změn zdrojových senzorů. Pokrývají vytvoření
@@ -33,6 +33,7 @@ ESP-IDF (`NoSuchProcess`). Pro místní kontrolu byl pouze v prostředí sestave
 ošetřen výpadek hledání PID použitím již dokumentované náhradní cesty
 `os.getppid()`. Kód ESPHome, dekodér a soubory projektu tím nebyly změněny.
 Tato úprava není součástí repozitáře ani návodu pro uživatelův HAOS.
+Následná kompilace stejného firmware na GitHub runneru prošla bez této úpravy.
 
 Externí W-MBus komponenta při konfiguraci vydává varování k chybějícímu
 `synchronous=`. Sestavení tím není zastaveno; jde o varování upstream komponenty.
@@ -44,8 +45,12 @@ Testy HA mají jedno upstream varování aiohttp, bez selhání testů.
 - Potvrzení rádiového ID teplé vody; `04846989` je zatím kandidát.
 - Potvrzení AES klíčů; klíč z 32 nul zde není ověřený pro žádný vlastní modul.
 - Shoda stavů a změn po odběru s mechanickými počítadly.
-- Dokončení HACS/hassfest kontrol a skutečná instalace zveřejněné verze přes HACS.
+- Skutečná instalace zveřejněné verze přes HACS do uživatelova HA.
 
 Uživatel potvrdil funkční přijímač s přímým propojením ESP32-C3 a CC1101 bez
 přidaných odporů a vlastní studený modul `04840742`. To není důkaz, že nová
 dvoukanálová konfigurace již byla nahraná nebo že jsou oba AES klíče správné.
+
+## GitHub Actions
+
+[Úspěšný běh všech čtyř kontrol](https://github.com/jerzik/Vodomer_esp32_C3_CC1101/actions/runs/37138414958) ověřil kód na commitu `14fa86ac317581d88c06921248c033b2ae8c304f`. Následující dokumentační commit mění pouze README a tento záznam ověření.
