@@ -53,4 +53,4 @@ dvoukanálová konfigurace již byla nahraná nebo že jsou oba AES klíče spr�
 
 ## GitHub Actions
 
-[Úspěšný běh všech čtyř kontrol](https://github.com/jerzik/Vodomer_esp32_C3_CC1101/actions/runs/37138414958) ověřil kód na commitu `14fa86ac317581d88c06921248c033b2ae8c304f`. Následující dokumentační commit mění pouze README a tento záznam ověření.
+[Úspěšný běh všech čtyř kontrol](https://github.com/jerzik/Vodomer_esp32_C3_CC1101/actions/runs/37138414958) ověřil kód na commitu `14fa86ac317581d88c06921248c033b2ae8c304f`. Následující změny se týkají pouze README, tohoto záznamu ověření a poznámek k vydání; kód integrace a konfigurace firmware zůstávají shodné.

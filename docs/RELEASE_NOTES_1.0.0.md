@@ -22,3 +22,7 @@ Home Assistant 2026.3.0+, HACS 2.x. Firmware se nahrává zvlášť přes ESPHom
 
 Studená voda `04840742` je identifikovaná. Teplé ID `04846989` a nulové AES klíče zůstávají k ověření na skutečných měřidlech.
 Výsledky kontrol a hranice ověření jsou v `docs/VALIDATION.md`.
+
+## Ověření vydání
+
+Na [GitHub Actions](https://github.com/jerzik/Vodomer_esp32_C3_CC1101/actions/runs/37138414958) prošly všechny čtyři kontroly: 22 testů integrace, HACS, hassfest a kompilace ESPHome 2026.9.1 pro ESP32-C3. Firmware nebyl nahrán do uživatelova zařízení.
