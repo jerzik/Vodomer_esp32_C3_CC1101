@@ -1,13 +1,15 @@
 {
   "domain": "vodomer_esp32_c3_cc1101",
   "name": "Vodoměr ESP32-C3 + CC1101",
-  "version": "1.0.0",
-  "codeowners": ["@jerzik"],
+  "codeowners": [
+    "@jerzik"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/jerzik/Vodomer_esp32_C3_CC1101",
   "integration_type": "helper",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/jerzik/Vodomer_esp32_C3_CC1101/issues",
-  "requirements": []
+  "requirements": [],
+  "version": "1.0.0"
 }
