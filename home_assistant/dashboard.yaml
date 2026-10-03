@@ -1,0 +1,20 @@
+# Ruční karta typu YAML. Uprav všechna ID podle své instalace.
+type: vertical-stack
+cards:
+  - type: entities
+    title: Vodoměry
+    entities:
+      - entity: sensor.vodomer_studena_voda_celkem
+        name: Studená voda – celkem
+      - entity: sensor.vodomer_tepla_voda_celkem
+        name: Teplá voda – celkem
+      - sensor.vodomer_studena_den
+      - sensor.vodomer_studena_mesic
+      - sensor.vodomer_tepla_den
+      - sensor.vodomer_tepla_mesic
+  - type: history-graph
+    title: Celkové stavy za poslední den
+    hours_to_show: 24
+    entities:
+      - sensor.vodomer_studena_voda_celkem
+      - sensor.vodomer_tepla_voda_celkem

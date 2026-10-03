@@ -1,0 +1,5 @@
+{
+  "name": "Vodoměr ESP32-C3 + CC1101 (studená a teplá voda)",
+  "homeassistant": "2026.3.0",
+  "hacs": "2.0.0"
+}

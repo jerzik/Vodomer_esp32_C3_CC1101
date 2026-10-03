@@ -1,0 +1,42 @@
+{
+  "title": "Water meter ESP32-C3 + CC1101",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Assign water meters",
+        "description": "Select existing ESPHome cumulative water sensors (total_increasing, m³ or L). Hot water is optional. Verify firmware reception first.",
+        "data": {
+          "cold_source": "Cold water source sensor",
+          "hot_source": "Hot water source sensor (optional)"
+        }
+      }
+    },
+    "error": {
+      "same_source": "Select different sources for cold and hot water.",
+      "invalid_source": "Select an existing water sensor with total_increasing state class and m³ or L unit.",
+      "circular_source": "Select the original ESPHome sensor to avoid a circular subscription.",
+      "already_configured": "This cold water source is already configured."
+    },
+    "abort": {
+      "already_configured": "This cold water source is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Change source sensors",
+        "description": "Saving reloads the integration. Clear the optional hot water field to remove its mapping.",
+        "data": {
+          "cold_source": "Cold water source sensor",
+          "hot_source": "Hot water source sensor (optional)"
+        }
+      }
+    },
+    "error": {
+      "same_source": "Select different sources for cold and hot water.",
+      "invalid_source": "Select an existing water sensor with total_increasing state class and m³ or L unit.",
+      "circular_source": "Select the original ESPHome sensor to avoid a circular subscription.",
+      "already_configured": "This cold water source is already configured."
+    }
+  }
+}

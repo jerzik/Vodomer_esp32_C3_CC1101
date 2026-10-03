@@ -1,0 +1,118 @@
+# ESPHome firmware: jeden přijímač pro studenou i teplou vodu.
+# Soubor patří do ESPHome Device Builder, nikoli configuration.yaml HA.
+substitutions:
+  cold_meter_id: "0x04840742"  # Potvrzený vlastní modul studené vody.
+  hot_meter_id: "0x04846989"   # Kandidát ze štítku; zatím NEPOTVRZEN příjmem.
+
+esphome:
+  name: vodomer-c3
+  friendly_name: Vodomer C3
+  min_version: 2026.9.1
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: ESP32C3
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+api:
+  encryption:
+    key: !secret vodomer_api_key
+  reboot_timeout: 0s
+
+# Nutné i pro kompilaci externí komponenty (real_time_clock.h).
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Prague
+
+ota:
+  - platform: esphome
+    password: !secret vodomer_ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  output_power: 8.5dB
+  reboot_timeout: 0s
+
+# Připnutá revize namísto průběžně se měnící větve main.
+external_components:
+  - source: github://SzczepanLeon/esphome-components@381afe89f39f8a7aaaae6330f214d3b4f59785b1
+    components: [wmbus_radio, wmbus_common, wmbus_meter]
+    refresh: never
+
+wmbus_common:
+  drivers: [apator162]
+
+spi:
+  clk_pin: GPIO5
+  mosi_pin: GPIO6
+  miso_pin: GPIO7
+
+wmbus_radio:
+  radio_type: CC1101
+  cs_pin: GPIO4
+  irq_pin: GPIO3
+  frequency: 868.95MHz
+  on_frame:
+    - then:
+        - logger.log:
+            format: "WMBUS RSSI=%ddBm FRAME=%s"
+            args: ['frame->rssi()', 'frame->as_hex().c_str()']
+
+wmbus_meter:
+  - id: studena_voda
+    meter_id: ${cold_meter_id}
+    type: apator162
+    key: !secret cold_meter_aes_key
+    mode: [T1]
+    on_telegram:
+      then:
+        - logger.log: "STUDENA: prijat telegram ciloveho modulu."
+  - id: tepla_voda
+    meter_id: ${hot_meter_id}
+    type: apator162
+    key: !secret hot_meter_aes_key
+    mode: [T1]
+    on_telegram:
+      then:
+        - logger.log: "TEPLA: prijat telegram kandidata; over shodu s pocitadlem."
+
+sensor:
+  - platform: wmbus_meter
+    parent_id: studena_voda
+    field: total_m3
+    name: "Studena voda radio"
+    unit_of_measurement: "m³"
+    device_class: water
+    state_class: total_increasing
+    accuracy_decimals: 3
+    icon: mdi:water
+  - platform: wmbus_meter
+    parent_id: tepla_voda
+    field: total_m3
+    name: "Tepla voda radio"
+    unit_of_measurement: "m³"
+    device_class: water
+    state_class: total_increasing
+    accuracy_decimals: 3
+    icon: mdi:water-thermometer
+  - platform: wifi_signal
+    name: "WiFi signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: "Stav prijimace"
+    entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart prijimace"
+    entity_category: diagnostic

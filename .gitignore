@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.esphome/
+dist/
+secrets.yaml
+esphome/secrets.yaml
+*.bin
+*.elf
+*.log

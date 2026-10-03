@@ -1,0 +1,30 @@
+# VOLITELNÝ HA package: /config/packages/vodomer.yaml
+# source nahraď skutečnými ID ověřených celkových senzorů v HA.
+# Lze použít entity této integrace nebo přímo nativní ESPHome senzory.
+# ID zde jsou příklady, nejsou automaticky zaručená názvy zařízení.
+# Teplou vodu aktivuj ve statistikách až po identifikaci modulu a dekódování.
+utility_meter:
+  vodomer_studena_den:
+    name: "Studená voda dnes"
+    unique_id: vodomer_studena_den
+    source: sensor.vodomer_studena_voda_celkem
+    cycle: daily
+    periodically_resetting: false
+  vodomer_studena_mesic:
+    name: "Studená voda tento měsíc"
+    unique_id: vodomer_studena_mesic
+    source: sensor.vodomer_studena_voda_celkem
+    cycle: monthly
+    periodically_resetting: false
+  vodomer_tepla_den:
+    name: "Teplá voda dnes"
+    unique_id: vodomer_tepla_den
+    source: sensor.vodomer_tepla_voda_celkem
+    cycle: daily
+    periodically_resetting: false
+  vodomer_tepla_mesic:
+    name: "Teplá voda tento měsíc"
+    unique_id: vodomer_tepla_mesic
+    source: sensor.vodomer_tepla_voda_celkem
+    cycle: monthly
+    periodically_resetting: false

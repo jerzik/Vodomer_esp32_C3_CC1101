@@ -1,0 +1,42 @@
+{
+  "title": "Vodoměr ESP32-C3 + CC1101",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Přiřazení vodoměrů",
+        "description": "Vyberte již připojené senzory ESPHome: kumulativní voda, total_increasing, v m³ nebo litrech. Teplou vodu lze přidat později. Příjem firmwarem musí být nejdříve ověřen.",
+        "data": {
+          "cold_source": "Studená voda – zdrojový senzor",
+          "hot_source": "Teplá voda – zdrojový senzor (volitelné)"
+        }
+      }
+    },
+    "error": {
+      "same_source": "Každý vodoměr musí mít jiný zdrojový senzor.",
+      "invalid_source": "Vyberte existující kumulativní senzor vody (water, total_increasing, m³ nebo L).",
+      "circular_source": "Vyberte původní ESPHome senzor; výstup této integrace by vytvořil smyčku.",
+      "already_configured": "Tento zdroj studené vody už je přiřazený."
+    },
+    "abort": {
+      "already_configured": "Tento zdroj studené vody už je přiřazený."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Změnit zdrojové senzory",
+        "description": "Po uložení se integrace znovu načte. Volitelné pole teplé vody vymažte, chcete-li ji odebrat.",
+        "data": {
+          "cold_source": "Studená voda – zdrojový senzor",
+          "hot_source": "Teplá voda – zdrojový senzor (volitelné)"
+        }
+      }
+    },
+    "error": {
+      "same_source": "Každý vodoměr musí mít jiný zdrojový senzor.",
+      "invalid_source": "Vyberte existující kumulativní senzor vody (water, total_increasing, m³ nebo L).",
+      "circular_source": "Vyberte původní ESPHome senzor; výstup této integrace by vytvořil smyčku.",
+      "already_configured": "Tento zdroj studené vody už je přiřazený."
+    }
+  }
+}

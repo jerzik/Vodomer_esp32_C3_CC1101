@@ -1,0 +1,45 @@
+name: Validate
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+      - run: pip install -r requirements-test.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: python -m pytest tests -q
+      - run: python scripts/build_release.py
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+  esphome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install esphome==2026.9.1
+      - run: cp esphome/secrets.example.yaml esphome/secrets.yaml
+      - run: esphome config esphome/vodomer-c3.yaml
+      - run: esphome config esphome/vodomer-c3-diagnostika.yaml
+      - run: esphome compile esphome/vodomer-c3.yaml

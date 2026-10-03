@@ -1,0 +1,30 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Verify tag matches manifest
+        run: |
+          python - <<'PY'
+          import json, os
+          version = json.load(open('custom_components/vodomer_esp32_c3_cc1101/manifest.json'))['version']
+          assert os.environ['GITHUB_REF_NAME'] == 'v' + version
+          PY
+      - run: pip install -r requirements-test.txt
+      - run: ruff check .
+      - run: python -m pytest tests -q
+      - run: python scripts/build_release.py
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/SHA256SUMS --verify-tag --title "Vodoměr ESP32-C3 + CC1101 $GITHUB_REF_NAME" --notes-file docs/RELEASE_NOTES_1.0.0.md
