@@ -8,8 +8,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
-from .const import CHANNELS, DOMAIN, NAME
-from .reading import volume_m3
+from .const import CHANNELS, CONF_HEAT, DOMAIN, NAME
+from .reading import heat_units, volume_m3
 
 
 async def async_setup_entry(
@@ -26,6 +26,15 @@ async def async_setup_entry(
             old_id = registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{channel}")
             if old_id:
                 registry.async_remove(old_id)
+    selected_heat = sources.get(CONF_HEAT, [])
+    keep = {f"{entry.entry_id}_heat_{source}" for source in selected_heat}
+    for registered in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (
+            registered.unique_id.startswith(f"{entry.entry_id}_heat_")
+            and registered.unique_id not in keep
+        ):
+            registry.async_remove(registered.entity_id)
+    entities.extend(HeatAllocatorSensor(entry, source) for source in selected_heat)
     async_add_entities(entities)
 
 
@@ -76,6 +85,32 @@ class WaterMeterSensor(SensorEntity):
             and state.attributes.get("state_class") == "total_increasing"
         ):
             value = volume_m3(state.state, state.attributes.get("unit_of_measurement"))
+        self._attr_available = value is not None
+        self._attr_native_value = value
+        self._attr_extra_state_attributes = {"source_entity": self._source}
+
+
+class HeatAllocatorSensor(WaterMeterSensor):
+    """Optional annual HCA totals alongside the original water channels."""
+
+    _attr_device_class = None
+    _attr_native_unit_of_measurement = "dilky"
+    _attr_suggested_display_precision = 0
+
+    def __init__(self, entry: ConfigEntry, source: str) -> None:
+        super().__init__(entry, source, f"heat_{source}", f"Topení {source.split('.', 1)[-1]}")
+        self._attr_icon = "mdi:radiator"
+
+    @callback
+    def _read_source(self) -> None:
+        state = self.hass.states.get(self._source)
+        value = None
+        if (
+            state
+            and state.attributes.get("device_class") is None
+            and state.attributes.get("state_class") == "total_increasing"
+        ):
+            value = heat_units(state.state, state.attributes.get("unit_of_measurement"))
         self._attr_available = value is not None
         self._attr_native_value = value
         self._attr_extra_state_attributes = {"source_entity": self._source}

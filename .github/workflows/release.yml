@@ -1,30 +1,44 @@
 name: Release
 on:
-  push:
-    tags: ['v*']
+  workflow_run:
+    workflows: [Validate]
+    types: [completed]
+    branches: [main]
 permissions:
   contents: write
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
 jobs:
   release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-      - name: Verify tag matches manifest
-        run: |
-          python - <<'PY'
-          import json, os
-          version = json.load(open('custom_components/vodomer_esp32_c3_cc1101/manifest.json'))['version']
-          assert os.environ['GITHUB_REF_NAME'] == 'v' + version
-          PY
-      - run: pip install -r requirements-test.txt
-      - run: ruff check .
-      - run: python -m pytest tests -q
-      - run: python scripts/build_release.py
-      - name: Publish GitHub release
+      - name: Build checked source archives
+        run: python scripts/build_release.py
+      - name: Publish version after all validation jobs pass
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/SHA256SUMS --verify-tag --title "Vodoměr ESP32-C3 + CC1101 $GITHUB_REF_NAME" --notes-file docs/RELEASE_NOTES_1.0.0.md
+          VERSION=$(python -c 'import json; print(json.load(open("custom_components/vodomer_esp32_c3_cc1101/manifest.json"))["version"])')
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; leaving it unchanged."
+            exit 0
+          fi
+          test -f "docs/RELEASE_NOTES_$VERSION.md"
+          gh release create "$TAG" dist/*.zip dist/SHA256SUMS \
+            --target "$CHECKED_SHA" \
+            --title "Voda a topení ESP32-C3 + CC1101 $TAG" \
+            --notes-file "docs/RELEASE_NOTES_$VERSION.md"

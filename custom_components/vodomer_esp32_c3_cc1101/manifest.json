@@ -11,5 +11,5 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/jerzik/Vodomer_esp32_C3_CC1101/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

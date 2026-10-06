@@ -1,0 +1,567 @@
+# ESP32-C3 Super Mini + CC1101, 2 vodomery + 4 E-ITN 40.
+# Cely soubor do ESPHome. Nepatri do HA configuration.yaml.
+# Pred nahranim ulozte puvodni funkcni konfiguraci.
+substitutions:
+  meter_tepla_id: "0x04846989"
+  meter_studena_id: "0x04840742"
+
+  heat_obyvak_id: "00548628"
+  heat_kuchyn_id: "00548629"
+  heat_loznice_id: "00548645"
+  heat_pokoj_id: "00547681"
+
+esphome:
+  name: vodomer-c3
+  friendly_name: vodomer-c3
+
+esp32:
+  variant: esp32c3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  logs:
+    wmbus: ERROR
+    wmbus_meter: ERROR
+
+api:
+  encryption:
+    key: !secret vodomer_api_key
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Prague
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: vodomer-c3 Fallback Hotspot
+    password: !secret vodomer_fallback_password
+
+captive_portal:
+
+external_components:
+  - source: github://SzczepanLeon/esphome-components@381afe89f39f8a7aaaae6330f214d3b4f59785b1
+    components: [wmbus_radio, wmbus_common, wmbus_meter]
+    # Zachova lokalne ulozenou verzi komponenty, pokud uz je v cache.
+    refresh: never
+
+wmbus_common:
+  drivers:
+    - apator162
+
+spi:
+  clk_pin: GPIO5
+  mosi_pin: GPIO6
+  miso_pin: GPIO7
+
+wmbus_radio:
+  radio_type: CC1101
+  cs_pin: GPIO4
+  irq_pin: GPIO3
+  frequency: 868.95MHz
+  on_frame:
+    - then:
+        - lambda: |-
+            const std::string hex = frame->as_hex();
+            if (hex.size() != 206) return;
+            std::vector<uint8_t> b;
+            b.reserve(hex.size() / 2);
+            auto nibble = [](char c) -> int {
+              if (c >= '0' && c <= '9') return c - '0';
+              if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+              if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+              return -1;
+            };
+            for (size_t i = 0; i < hex.size(); i += 2) {
+              int a = nibble(hex[i]), z = nibble(hex[i + 1]);
+              if (a < 0 || z < 0) return;
+              b.push_back((a << 4) | z);
+            }
+            // Only the unencrypted APA / version 0F / HCA format captured in your log.
+            if (b[0] != 102 || b[1] != 0x44 || b[2] != 0x01 || b[3] != 0x06 ||
+                b[8] != 0x0f || b[9] != 0x08 || b[10] != 0x7a ||
+                b[13] != 0x00 || b[14] != 0x20) return;
+            uint32_t meter = uint32_t(b[4]) | (uint32_t(b[5]) << 8) |
+                             (uint32_t(b[6]) << 16) | (uint32_t(b[7]) << 24);
+            int index = -1;
+            if (meter == 0x${heat_obyvak_id}UL) index = 0;
+            if (meter == 0x${heat_kuchyn_id}UL) index = 1;
+            if (meter == 0x${heat_loznice_id}UL) index = 2;
+            if (meter == 0x${heat_pokoj_id}UL) index = 3;
+            if (index < 0) return;
+            // Validate every record header before reading fixed offsets. No substring scans.
+            if (b[15] != 0x02 || b[16] != 0x6c ||
+                b[19] != 0x02 || b[20] != 0x6e ||
+                b[23] != 0x42 || b[24] != 0x6e ||
+                b[27] != 0x42 || b[28] != 0x6c ||
+                b[31] != 0x41 || b[32] != 0xfd || b[33] != 0x29 ||
+                b[35] != 0x42 || b[36] != 0xe5 || b[37] != 0x12 ||
+                b[40] != 0x82 || b[41] != 0x40 || b[42] != 0x6e ||
+                b[45] != 0x01 || b[46] != 0xfd || b[47] != 0x97 || b[48] != 0x1d ||
+                b[50] != 0x02 || b[51] != 0xe5 || b[52] != 0x12 ||
+                b[55] != 0x01 || b[56] != 0x79 ||
+                b[58] != 0x82 || b[59] != 0x44 || b[60] != 0x6c ||
+                b[63] != 0x82 || b[64] != 0x44 || b[65] != 0x6e ||
+                b[68] != 0x8d || b[69] != 0x44 || b[70] != 0xee || b[71] != 0x1f) {
+              ESP_LOGW("eitn40", "Unknown record layout for %08X; skipping", (unsigned) meter);
+              return;
+            }
+            auto u16 = [&b](size_t p) -> uint16_t { return uint16_t(b[p]) | (uint16_t(b[p + 1]) << 8); };
+            auto date = [&b](size_t p) -> std::string {
+              unsigned day = b[p] & 31, month = b[p + 1] & 15;
+              unsigned year = 2000 + ((b[p] >> 5) | ((b[p + 1] & 0xf0) >> 1));
+              if (day == 0 || day > 31 || month == 0 || month > 12) return "neplatne datum";
+              char result[16];
+              snprintf(result, sizeof(result), "%04u-%02u-%02u", year, month, day);
+              return result;
+            };
+            const float current = u16(21);
+            const float previous = u16(25);
+            const float temp0 = static_cast<int16_t>(u16(53)) * 0.01f;
+            const float temp1 = static_cast<int16_t>(u16(38)) * 0.01f;
+            auto now = id(ha_time).now();
+            const std::string received = now.is_valid() ? now.strftime("%d.%m.%Y %H:%M:%S") : "cekam na synchronizaci casu";
+            switch (index) {
+            case 0:
+              id(obyvak_aktualni).publish_state(current);
+              id(obyvak_minuly).publish_state(previous);
+              id(obyvak_teplota).publish_state(temp0 >= -30 && temp0 <= 80 ? temp0 : NAN);
+              id(obyvak_teplota_archiv).publish_state(temp1 >= -30 && temp1 <= 80 ? temp1 : NAN);
+              id(obyvak_rssi).publish_state(frame->rssi());
+              id(obyvak_pocet).publish_state(id(obyvak_pocet).has_state() ? id(obyvak_pocet).state + 1 : 1);
+              id(obyvak_posledni_ms) = millis();
+              id(obyvak_stari).publish_state(0);
+              id(obyvak_prijem).publish_state(received);
+              id(obyvak_datum).publish_state(date(17));
+              id(obyvak_archiv_datum).publish_state(date(29));
+              break;
+            case 1:
+              id(kuchyn_aktualni).publish_state(current);
+              id(kuchyn_minuly).publish_state(previous);
+              id(kuchyn_teplota).publish_state(temp0 >= -30 && temp0 <= 80 ? temp0 : NAN);
+              id(kuchyn_teplota_archiv).publish_state(temp1 >= -30 && temp1 <= 80 ? temp1 : NAN);
+              id(kuchyn_rssi).publish_state(frame->rssi());
+              id(kuchyn_pocet).publish_state(id(kuchyn_pocet).has_state() ? id(kuchyn_pocet).state + 1 : 1);
+              id(kuchyn_posledni_ms) = millis();
+              id(kuchyn_stari).publish_state(0);
+              id(kuchyn_prijem).publish_state(received);
+              id(kuchyn_datum).publish_state(date(17));
+              id(kuchyn_archiv_datum).publish_state(date(29));
+              break;
+            case 2:
+              id(loznice_aktualni).publish_state(current);
+              id(loznice_minuly).publish_state(previous);
+              id(loznice_teplota).publish_state(temp0 >= -30 && temp0 <= 80 ? temp0 : NAN);
+              id(loznice_teplota_archiv).publish_state(temp1 >= -30 && temp1 <= 80 ? temp1 : NAN);
+              id(loznice_rssi).publish_state(frame->rssi());
+              id(loznice_pocet).publish_state(id(loznice_pocet).has_state() ? id(loznice_pocet).state + 1 : 1);
+              id(loznice_posledni_ms) = millis();
+              id(loznice_stari).publish_state(0);
+              id(loznice_prijem).publish_state(received);
+              id(loznice_datum).publish_state(date(17));
+              id(loznice_archiv_datum).publish_state(date(29));
+              break;
+            case 3:
+              id(pokoj_aktualni).publish_state(current);
+              id(pokoj_minuly).publish_state(previous);
+              id(pokoj_teplota).publish_state(temp0 >= -30 && temp0 <= 80 ? temp0 : NAN);
+              id(pokoj_teplota_archiv).publish_state(temp1 >= -30 && temp1 <= 80 ? temp1 : NAN);
+              id(pokoj_rssi).publish_state(frame->rssi());
+              id(pokoj_pocet).publish_state(id(pokoj_pocet).has_state() ? id(pokoj_pocet).state + 1 : 1);
+              id(pokoj_posledni_ms) = millis();
+              id(pokoj_stari).publish_state(0);
+              id(pokoj_prijem).publish_state(received);
+              id(pokoj_datum).publish_state(date(17));
+              id(pokoj_archiv_datum).publish_state(date(29));
+              break;
+            }
+            frame->mark_as_handled();
+            ESP_LOGI("eitn40", "%08X: namer=%.0f minuly=%.0f prumer=%.2f C ulozeny=%.2f C RSSI=%d", (unsigned) meter, current, previous, temp0, temp1, frame->rssi());
+
+wmbus_meter:
+  - id: vodomer_tepla
+    meter_id: ${meter_tepla_id}
+    type: apator162
+    key: !secret hot_meter_aes_key
+    mode: [T1]
+  - id: vodomer_studena
+    meter_id: ${meter_studena_id}
+    type: apator162
+    key: !secret cold_meter_aes_key
+    mode: [T1]
+
+globals:
+  - id: obyvak_posledni_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: kuchyn_posledni_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: loznice_posledni_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: pokoj_posledni_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+sensor:
+  - platform: wmbus_meter
+    parent_id: vodomer_tepla
+    field: total_m3
+    name: "Teplá voda celkem"
+    unit_of_measurement: "m³"
+    device_class: water
+    state_class: total_increasing
+    accuracy_decimals: 3
+    icon: mdi:water-thermometer
+
+  - platform: wmbus_meter
+    parent_id: vodomer_studena
+    field: total_m3
+    name: "Studená voda celkem"
+    unit_of_measurement: "m³"
+    device_class: water
+    state_class: total_increasing
+    accuracy_decimals: 3
+    icon: mdi:water
+
+  - platform: template
+    id: obyvak_aktualni
+    name: "EITN ${heat_obyvak_id} aktualni"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+    state_class: total_increasing
+
+  - platform: template
+    id: obyvak_minuly
+    name: "EITN ${heat_obyvak_id} minuly"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: template
+    id: obyvak_teplota
+    name: "EITN ${heat_obyvak_id} teplota"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+    state_class: measurement
+
+  - platform: template
+    id: obyvak_teplota_archiv
+    name: "EITN ${heat_obyvak_id} teplota_archiv"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+
+  - platform: template
+    id: obyvak_rssi
+    name: "EITN ${heat_obyvak_id} rssi"
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+    update_interval: never
+    device_class: signal_strength
+    state_class: measurement
+    entity_category: diagnostic
+
+  - platform: template
+    id: obyvak_pocet
+    name: "EITN ${heat_obyvak_id} pocet"
+    unit_of_measurement: "zprav"
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+
+  - platform: template
+    id: obyvak_stari
+    name: "EITN ${heat_obyvak_id} stari"
+    unit_of_measurement: "min"
+    accuracy_decimals: 1
+    update_interval: 30s
+    device_class: duration
+    state_class: measurement
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(obyvak_pocet).has_state()) return NAN;
+      return static_cast<uint32_t>(millis() - id(obyvak_posledni_ms)) / 60000.0f;
+
+  - platform: template
+    id: kuchyn_aktualni
+    name: "EITN ${heat_kuchyn_id} aktualni"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+    state_class: total_increasing
+
+  - platform: template
+    id: kuchyn_minuly
+    name: "EITN ${heat_kuchyn_id} minuly"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: template
+    id: kuchyn_teplota
+    name: "EITN ${heat_kuchyn_id} teplota"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+    state_class: measurement
+
+  - platform: template
+    id: kuchyn_teplota_archiv
+    name: "EITN ${heat_kuchyn_id} teplota_archiv"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+
+  - platform: template
+    id: kuchyn_rssi
+    name: "EITN ${heat_kuchyn_id} rssi"
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+    update_interval: never
+    device_class: signal_strength
+    state_class: measurement
+    entity_category: diagnostic
+
+  - platform: template
+    id: kuchyn_pocet
+    name: "EITN ${heat_kuchyn_id} pocet"
+    unit_of_measurement: "zprav"
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+
+  - platform: template
+    id: kuchyn_stari
+    name: "EITN ${heat_kuchyn_id} stari"
+    unit_of_measurement: "min"
+    accuracy_decimals: 1
+    update_interval: 30s
+    device_class: duration
+    state_class: measurement
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(kuchyn_pocet).has_state()) return NAN;
+      return static_cast<uint32_t>(millis() - id(kuchyn_posledni_ms)) / 60000.0f;
+
+  - platform: template
+    id: loznice_aktualni
+    name: "EITN ${heat_loznice_id} aktualni"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+    state_class: total_increasing
+
+  - platform: template
+    id: loznice_minuly
+    name: "EITN ${heat_loznice_id} minuly"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: template
+    id: loznice_teplota
+    name: "EITN ${heat_loznice_id} teplota"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+    state_class: measurement
+
+  - platform: template
+    id: loznice_teplota_archiv
+    name: "EITN ${heat_loznice_id} teplota_archiv"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+
+  - platform: template
+    id: loznice_rssi
+    name: "EITN ${heat_loznice_id} rssi"
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+    update_interval: never
+    device_class: signal_strength
+    state_class: measurement
+    entity_category: diagnostic
+
+  - platform: template
+    id: loznice_pocet
+    name: "EITN ${heat_loznice_id} pocet"
+    unit_of_measurement: "zprav"
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+
+  - platform: template
+    id: loznice_stari
+    name: "EITN ${heat_loznice_id} stari"
+    unit_of_measurement: "min"
+    accuracy_decimals: 1
+    update_interval: 30s
+    device_class: duration
+    state_class: measurement
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(loznice_pocet).has_state()) return NAN;
+      return static_cast<uint32_t>(millis() - id(loznice_posledni_ms)) / 60000.0f;
+
+  - platform: template
+    id: pokoj_aktualni
+    name: "EITN ${heat_pokoj_id} aktualni"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+    state_class: total_increasing
+
+  - platform: template
+    id: pokoj_minuly
+    name: "EITN ${heat_pokoj_id} minuly"
+    unit_of_measurement: "dilky"
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: template
+    id: pokoj_teplota
+    name: "EITN ${heat_pokoj_id} teplota"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+    state_class: measurement
+
+  - platform: template
+    id: pokoj_teplota_archiv
+    name: "EITN ${heat_pokoj_id} teplota_archiv"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    update_interval: never
+    device_class: temperature
+
+  - platform: template
+    id: pokoj_rssi
+    name: "EITN ${heat_pokoj_id} rssi"
+    unit_of_measurement: "dBm"
+    accuracy_decimals: 0
+    update_interval: never
+    device_class: signal_strength
+    state_class: measurement
+    entity_category: diagnostic
+
+  - platform: template
+    id: pokoj_pocet
+    name: "EITN ${heat_pokoj_id} pocet"
+    unit_of_measurement: "zprav"
+    accuracy_decimals: 0
+    update_interval: never
+    entity_category: diagnostic
+
+  - platform: template
+    id: pokoj_stari
+    name: "EITN ${heat_pokoj_id} stari"
+    unit_of_measurement: "min"
+    accuracy_decimals: 1
+    update_interval: 30s
+    device_class: duration
+    state_class: measurement
+    entity_category: diagnostic
+    lambda: |-
+      if (!id(pokoj_pocet).has_state()) return NAN;
+      return static_cast<uint32_t>(millis() - id(pokoj_posledni_ms)) / 60000.0f;
+
+  - platform: wifi_signal
+    name: "WiFi signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: template
+    id: obyvak_prijem
+    name: "EITN ${heat_obyvak_id} prijem"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: obyvak_datum
+    name: "EITN ${heat_obyvak_id} datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: obyvak_archiv_datum
+    name: "EITN ${heat_obyvak_id} archiv_datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: kuchyn_prijem
+    name: "EITN ${heat_kuchyn_id} prijem"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: kuchyn_datum
+    name: "EITN ${heat_kuchyn_id} datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: kuchyn_archiv_datum
+    name: "EITN ${heat_kuchyn_id} archiv_datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: loznice_prijem
+    name: "EITN ${heat_loznice_id} prijem"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: loznice_datum
+    name: "EITN ${heat_loznice_id} datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: loznice_archiv_datum
+    name: "EITN ${heat_loznice_id} archiv_datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: pokoj_prijem
+    name: "EITN ${heat_pokoj_id} prijem"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: pokoj_datum
+    name: "EITN ${heat_pokoj_id} datum"
+    update_interval: never
+    entity_category: diagnostic
+  - platform: template
+    id: pokoj_archiv_datum
+    name: "EITN ${heat_pokoj_id} archiv_datum"
+    update_interval: never
+    entity_category: diagnostic
+
+binary_sensor:
+  - platform: status
+    name: "Stav prijimace"
+    entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart prijimace"
+    entity_category: diagnostic

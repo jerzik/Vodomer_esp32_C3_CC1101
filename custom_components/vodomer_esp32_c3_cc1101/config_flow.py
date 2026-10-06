@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
-from .const import CONF_COLD, CONF_HOT, DOMAIN, NAME, UNIT_FACTORS
+from .const import CONF_COLD, CONF_HEAT, CONF_HOT, DOMAIN, HEAT_UNITS, NAME, UNIT_FACTORS
 
 
 def _schema(values: dict[str, Any]) -> vol.Schema:
@@ -24,6 +24,11 @@ def _schema(values: dict[str, Any]) -> vol.Schema:
             vol.Optional(
                 CONF_HOT, description={"suggested_value": values.get(CONF_HOT)}
             ): entity_selector,
+            vol.Optional(
+                CONF_HEAT, description={"suggested_value": values.get(CONF_HEAT, [])}
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor", multiple=True)
+            ),
         }
     )
 
@@ -52,6 +57,22 @@ def validate_sources(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, str
             or state.attributes.get("unit_of_measurement") not in UNIT_FACTORS
         ):
             errors[key] = "invalid_source"
+    heat_sources = data.get(CONF_HEAT, [])
+    if len(heat_sources) != len(set(heat_sources)):
+        errors[CONF_HEAT] = "duplicate_heat_source"
+    for entity_id in heat_sources:
+        state = hass.states.get(entity_id)
+        registered = registry.async_get(entity_id)
+        if registered and registered.platform == DOMAIN:
+            errors[CONF_HEAT] = "circular_source"
+        elif (
+            not entity_id.startswith("sensor.")
+            or state is None
+            or state.attributes.get("device_class") is not None
+            or state.attributes.get("state_class") != "total_increasing"
+            or state.attributes.get("unit_of_measurement") not in HEAT_UNITS
+        ):
+            errors[CONF_HEAT] = "invalid_heat_source"
     return errors
 
 

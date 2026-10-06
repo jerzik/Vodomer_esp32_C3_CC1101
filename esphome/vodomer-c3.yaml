@@ -2,7 +2,7 @@
 # Soubor patří do ESPHome Device Builder, nikoli configuration.yaml HA.
 substitutions:
   cold_meter_id: "0x04840742"  # Potvrzený vlastní modul studené vody.
-  hot_meter_id: "0x04846989"   # Kandidát ze štítku; zatím NEPOTVRZEN příjmem.
+  hot_meter_id: "0x04846989"   # Potvrzeno dekodovanim v referencni instalaci 6. 10. 2026.
 
 esphome:
   name: vodomer-c3
@@ -81,7 +81,7 @@ wmbus_meter:
     mode: [T1]
     on_telegram:
       then:
-        - logger.log: "TEPLA: prijat telegram kandidata; over shodu s pocitadlem."
+        - logger.log: "TEPLA: prijat telegram ciloveho modulu."
 
 sensor:
   - platform: wmbus_meter

@@ -1,5 +1,14 @@
 # Změny
 
+## 1.1.0 — 2026-10-06
+- Rozšířený ESPHome firmware: dva vodoměry + čtyři E-ITN 40 na jednom CC1101.
+- Ověřené roční náměry a dva průměry okolí; 40 nativních entit s diagnostikou a daty.
+- Volitelné roční náměry topení v HACS integračním UI, zachované identifikátory vody.
+- Nativní karta čtyř místností, fotografie, identifikace a migrační návod.
+- Testy dekodéru a HA rozšíření; explicitní hranice podpory teplot a historie.
+- Publikace release až po úspěšném Validate pro stejný commit.
+
+
 ## 1.0.0 — 2026-10-03
 
 - Jeden ESP32-C3 Super Mini a CC1101 přijímá dva Apator AT-WMBUS-16-2.

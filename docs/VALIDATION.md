@@ -1,3 +1,19 @@
+# Ověření verze 1.1.0
+
+Kontroly 6. 10. 2026.
+
+- Home Assistant 2026.9.4 / Python 3.14.7: **32 testů prošlo**, včetně přidání/odebrání topení, ročního resetu, nedostupnosti a zachování vodních unique_id.
+- C++ dekodér z výsledného YAML: g++ -std=c++17 -Wall -Wextra -Werror, čtyři vlastní zachycené telegramy, cizí syntetické ID, všechny zkrácené délky a změněné hlavičky. Prošlo.
+- Původní pracovní replay před publikací: 134 zpráv, 12 vlastních; okolní měřidla se ignorují. Ve veřejných testech jsou jen čtyři vlastní telegramy.
+- Ruff a formátování: prošly.
+- Kompletní rozšířený YAML dříve validován v ESPHome 2026.9.1 a úspěšně přeložen/nahrán uživatelem; provozní log potvrzuje oba vodoměry a tři indikátory. Pokoj byl potvrzen předchozím logem a replay testem, nikoli novým krátkým provozním výpisem.
+- Release workflow zveřejní 1.1.0 až po úspěchu Validate na stejném commitu: testy, HACS, hassfest a plná kompilace vodní i rozšířené konfigurace. Výsledky jsou dostupné v GitHub Actions.
+- Teploty jsou průměry okolí (VIF 0x65 + Average 0x12), registr 0/1. Délka průměrovacího období není potvrzená. Aktuální teplota radiátoru, podrobný měsíční profil a procenta baterie se nevytvářejí.
+- Skutečné kliknutí na aktualizaci HACS a vizuální vykreslení karty v uživatelově HA nebylo vzdáleně provedeno.
+
+## Historický záznam 1.0.0
+Následující stav platí pro 3. 10., nikoli pro již ověřené logy 6. 10. 2026.
+
 # Ověření verze 1.0.0
 
 Kontroly provedené **3. 10. 2026** v odděleném pracovním prostředí.

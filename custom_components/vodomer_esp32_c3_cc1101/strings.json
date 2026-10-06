@@ -4,10 +4,11 @@
     "step": {
       "user": {
         "title": "Assign water meters",
-        "description": "Select existing ESPHome cumulative water sensors (total_increasing, m³ or L). Hot water is optional. Verify firmware reception first.",
+        "description": "Select existing ESPHome cumulative water sensors (total_increasing, m³ or L). Hot water is optional. Verify firmware reception first. Optionally select current annual heat allocator totals (HCA units, total_increasing), not archives or temperatures. The detailed card uses the original ESPHome entities. Clearing the selection removes the corresponding helper sensors.",
         "data": {
           "cold_source": "Cold water source sensor",
-          "hot_source": "Hot water source sensor (optional)"
+          "hot_source": "Hot water source sensor (optional)",
+          "heat_sources": "Heating – current annual HCA totals (optional)"
         }
       }
     },
@@ -15,7 +16,9 @@
       "same_source": "Select different sources for cold and hot water.",
       "invalid_source": "Select an existing water sensor with total_increasing state class and m³ or L unit.",
       "circular_source": "Select the original ESPHome sensor to avoid a circular subscription.",
-      "already_configured": "This cold water source is already configured."
+      "already_configured": "This cold water source is already configured.",
+      "invalid_heat_source": "Select a current annual total without device_class, with total_increasing and unit dilky, dílky or HCA.",
+      "duplicate_heat_source": "Select each allocator only once."
     },
     "abort": {
       "already_configured": "This cold water source is already configured."
@@ -25,10 +28,11 @@
     "step": {
       "init": {
         "title": "Change source sensors",
-        "description": "Saving reloads the integration. Clear the optional hot water field to remove its mapping.",
+        "description": "Saving reloads the integration. Clear the optional hot water field to remove its mapping. Optionally select current annual heat allocator totals (HCA units, total_increasing), not archives or temperatures. The detailed card uses the original ESPHome entities. Clearing the selection removes the corresponding helper sensors.",
         "data": {
           "cold_source": "Cold water source sensor",
-          "hot_source": "Hot water source sensor (optional)"
+          "hot_source": "Hot water source sensor (optional)",
+          "heat_sources": "Heating – current annual HCA totals (optional)"
         }
       }
     },
@@ -36,7 +40,9 @@
       "same_source": "Select different sources for cold and hot water.",
       "invalid_source": "Select an existing water sensor with total_increasing state class and m³ or L unit.",
       "circular_source": "Select the original ESPHome sensor to avoid a circular subscription.",
-      "already_configured": "This cold water source is already configured."
+      "already_configured": "This cold water source is already configured.",
+      "invalid_heat_source": "Select a current annual total without device_class, with total_increasing and unit dilky, dílky or HCA.",
+      "duplicate_heat_source": "Select each allocator only once."
     }
   }
 }

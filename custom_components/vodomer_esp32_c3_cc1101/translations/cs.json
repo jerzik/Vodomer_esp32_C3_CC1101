@@ -4,10 +4,11 @@
     "step": {
       "user": {
         "title": "Přiřazení vodoměrů",
-        "description": "Vyberte již připojené senzory ESPHome: kumulativní voda, total_increasing, v m³ nebo litrech. Teplou vodu lze přidat později. Příjem firmwarem musí být nejdříve ověřen.",
+        "description": "Vyberte již připojené senzory ESPHome: kumulativní voda, total_increasing, v m³ nebo litrech. Teplou vodu lze přidat později. Příjem firmwarem musí být nejdříve ověřen. Volitelně vyberte zdrojové roční náměry topení (dílky, total_increasing); nevybírejte archiv ani teploty. Podrobná karta používá původní ESPHome entity. Vymazání výběru odebere příslušné pomocné senzory.",
         "data": {
           "cold_source": "Studená voda – zdrojový senzor",
-          "hot_source": "Teplá voda – zdrojový senzor (volitelné)"
+          "hot_source": "Teplá voda – zdrojový senzor (volitelné)",
+          "heat_sources": "Topení – aktuální roční náměry (volitelné)"
         }
       }
     },
@@ -15,7 +16,9 @@
       "same_source": "Každý vodoměr musí mít jiný zdrojový senzor.",
       "invalid_source": "Vyberte existující kumulativní senzor vody (water, total_increasing, m³ nebo L).",
       "circular_source": "Vyberte původní ESPHome senzor; výstup této integrace by vytvořil smyčku.",
-      "already_configured": "Tento zdroj studené vody už je přiřazený."
+      "already_configured": "Tento zdroj studené vody už je přiřazený.",
+      "invalid_heat_source": "Vyberte aktuální roční náměr bez device_class, s total_increasing a jednotkou dilky, dílky nebo HCA.",
+      "duplicate_heat_source": "Každý indikátor vyberte pouze jednou."
     },
     "abort": {
       "already_configured": "Tento zdroj studené vody už je přiřazený."
@@ -25,10 +28,11 @@
     "step": {
       "init": {
         "title": "Změnit zdrojové senzory",
-        "description": "Po uložení se integrace znovu načte. Volitelné pole teplé vody vymažte, chcete-li ji odebrat.",
+        "description": "Po uložení se integrace znovu načte. Volitelné pole teplé vody vymažte, chcete-li ji odebrat. Volitelně vyberte zdrojové roční náměry topení (dílky, total_increasing); nevybírejte archiv ani teploty. Podrobná karta používá původní ESPHome entity. Vymazání výběru odebere příslušné pomocné senzory.",
         "data": {
           "cold_source": "Studená voda – zdrojový senzor",
-          "hot_source": "Teplá voda – zdrojový senzor (volitelné)"
+          "hot_source": "Teplá voda – zdrojový senzor (volitelné)",
+          "heat_sources": "Topení – aktuální roční náměry (volitelné)"
         }
       }
     },
@@ -36,7 +40,9 @@
       "same_source": "Každý vodoměr musí mít jiný zdrojový senzor.",
       "invalid_source": "Vyberte existující kumulativní senzor vody (water, total_increasing, m³ nebo L).",
       "circular_source": "Vyberte původní ESPHome senzor; výstup této integrace by vytvořil smyčku.",
-      "already_configured": "Tento zdroj studené vody už je přiřazený."
+      "already_configured": "Tento zdroj studené vody už je přiřazený.",
+      "invalid_heat_source": "Vyberte aktuální roční náměr bez device_class, s total_increasing a jednotkou dilky, dílky nebo HCA.",
+      "duplicate_heat_source": "Každý indikátor vyberte pouze jednou."
     }
   }
 }

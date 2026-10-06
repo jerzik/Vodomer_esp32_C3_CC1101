@@ -1,0 +1,146 @@
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      ## Topení — E-ITN 40
+      Poměrové dílky, nikoli kWh. Teploty jsou **průměry okolí**, nikoli okamžité teploty radiátoru; délka průměrovacího období zatím není potvrzena.
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: markdown
+        title: "Obývák"
+        content: |-
+          {% set mid = "00548628" %}
+          {% macro value(key, unit='') -%}
+            {% set found = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_' ~ key ~ '$') | list %}
+            {% if found | count == 1 and found[0].state not in ['unknown','unavailable'] %}
+              {{ found[0].state }}{{ (' ' ~ unit) if unit else '' }}
+            {% else %}—{% endif %}
+          {%- endmacro %}
+          {% set age = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_stari$') | list %}
+          {% if age | count != 1 or age[0].state in ['unknown','unavailable'] %}
+          **⚪ Čekám na data / připojení ESP**
+          {% elif age[0].state | float(999) > 15 %}
+          **🟠 Odečet je starší než 15 minut**
+          {% else %}
+          **🟢 Příjem v posledních 15 minutách**
+          {% endif %}
+
+          **ID:** `00548628`
+
+          | Údaj | Hodnota |
+          |:--|--:|
+          | Aktuální roční náměr | {{ value('aktualni', 'dílků') }} |
+          | Minulý roční náměr | {{ value('minuly', 'dílků') }} |
+          | Průměrná teplota okolí — registr 0 | {{ value('teplota', '°C') }} |
+          | Uložený průměr okolí — registr 1 | {{ value('teplota_archiv', '°C') }} |
+          | Signál měřiče | {{ value('rssi', 'dBm') }} |
+          | Stáří odečtu | {{ value('stari', 'min') }} |
+          | Zprávy od restartu ESP | {{ value('pocet') }} |
+          | Datum měřiče | {{ value('datum') }} |
+          | Datum archivního záznamu | {{ value('archiv_datum') }} |
+
+          **Přijato:** {{ value('prijem') }}
+      - type: markdown
+        title: "Kuchyň"
+        content: |-
+          {% set mid = "00548629" %}
+          {% macro value(key, unit='') -%}
+            {% set found = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_' ~ key ~ '$') | list %}
+            {% if found | count == 1 and found[0].state not in ['unknown','unavailable'] %}
+              {{ found[0].state }}{{ (' ' ~ unit) if unit else '' }}
+            {% else %}—{% endif %}
+          {%- endmacro %}
+          {% set age = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_stari$') | list %}
+          {% if age | count != 1 or age[0].state in ['unknown','unavailable'] %}
+          **⚪ Čekám na data / připojení ESP**
+          {% elif age[0].state | float(999) > 15 %}
+          **🟠 Odečet je starší než 15 minut**
+          {% else %}
+          **🟢 Příjem v posledních 15 minutách**
+          {% endif %}
+
+          **ID:** `00548629`
+
+          | Údaj | Hodnota |
+          |:--|--:|
+          | Aktuální roční náměr | {{ value('aktualni', 'dílků') }} |
+          | Minulý roční náměr | {{ value('minuly', 'dílků') }} |
+          | Průměrná teplota okolí — registr 0 | {{ value('teplota', '°C') }} |
+          | Uložený průměr okolí — registr 1 | {{ value('teplota_archiv', '°C') }} |
+          | Signál měřiče | {{ value('rssi', 'dBm') }} |
+          | Stáří odečtu | {{ value('stari', 'min') }} |
+          | Zprávy od restartu ESP | {{ value('pocet') }} |
+          | Datum měřiče | {{ value('datum') }} |
+          | Datum archivního záznamu | {{ value('archiv_datum') }} |
+
+          **Přijato:** {{ value('prijem') }}
+      - type: markdown
+        title: "Ložnice"
+        content: |-
+          {% set mid = "00548645" %}
+          {% macro value(key, unit='') -%}
+            {% set found = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_' ~ key ~ '$') | list %}
+            {% if found | count == 1 and found[0].state not in ['unknown','unavailable'] %}
+              {{ found[0].state }}{{ (' ' ~ unit) if unit else '' }}
+            {% else %}—{% endif %}
+          {%- endmacro %}
+          {% set age = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_stari$') | list %}
+          {% if age | count != 1 or age[0].state in ['unknown','unavailable'] %}
+          **⚪ Čekám na data / připojení ESP**
+          {% elif age[0].state | float(999) > 15 %}
+          **🟠 Odečet je starší než 15 minut**
+          {% else %}
+          **🟢 Příjem v posledních 15 minutách**
+          {% endif %}
+
+          **ID:** `00548645`
+
+          | Údaj | Hodnota |
+          |:--|--:|
+          | Aktuální roční náměr | {{ value('aktualni', 'dílků') }} |
+          | Minulý roční náměr | {{ value('minuly', 'dílků') }} |
+          | Průměrná teplota okolí — registr 0 | {{ value('teplota', '°C') }} |
+          | Uložený průměr okolí — registr 1 | {{ value('teplota_archiv', '°C') }} |
+          | Signál měřiče | {{ value('rssi', 'dBm') }} |
+          | Stáří odečtu | {{ value('stari', 'min') }} |
+          | Zprávy od restartu ESP | {{ value('pocet') }} |
+          | Datum měřiče | {{ value('datum') }} |
+          | Datum archivního záznamu | {{ value('archiv_datum') }} |
+
+          **Přijato:** {{ value('prijem') }}
+      - type: markdown
+        title: "Pokoj"
+        content: |-
+          {% set mid = "00547681" %}
+          {% macro value(key, unit='') -%}
+            {% set found = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_' ~ key ~ '$') | list %}
+            {% if found | count == 1 and found[0].state not in ['unknown','unavailable'] %}
+              {{ found[0].state }}{{ (' ' ~ unit) if unit else '' }}
+            {% else %}—{% endif %}
+          {%- endmacro %}
+          {% set age = states.sensor | selectattr('entity_id', 'search', 'eitn_' ~ mid ~ '_stari$') | list %}
+          {% if age | count != 1 or age[0].state in ['unknown','unavailable'] %}
+          **⚪ Čekám na data / připojení ESP**
+          {% elif age[0].state | float(999) > 15 %}
+          **🟠 Odečet je starší než 15 minut**
+          {% else %}
+          **🟢 Příjem v posledních 15 minutách**
+          {% endif %}
+
+          **ID:** `00547681`
+
+          | Údaj | Hodnota |
+          |:--|--:|
+          | Aktuální roční náměr | {{ value('aktualni', 'dílků') }} |
+          | Minulý roční náměr | {{ value('minuly', 'dílků') }} |
+          | Průměrná teplota okolí — registr 0 | {{ value('teplota', '°C') }} |
+          | Uložený průměr okolí — registr 1 | {{ value('teplota_archiv', '°C') }} |
+          | Signál měřiče | {{ value('rssi', 'dBm') }} |
+          | Stáří odečtu | {{ value('stari', 'min') }} |
+          | Zprávy od restartu ESP | {{ value('pocet') }} |
+          | Datum měřiče | {{ value('datum') }} |
+          | Datum archivního záznamu | {{ value('archiv_datum') }} |
+
+          **Přijato:** {{ value('prijem') }}

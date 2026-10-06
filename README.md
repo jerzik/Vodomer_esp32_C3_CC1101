@@ -2,9 +2,22 @@
 
 <img src="docs/assets/icon.png" width="128" alt="Ikona vodoměru">
 
-**Studená a teplá voda v Home Assistantu přes ESP32-C3 Super Mini a CC1101.**
+**Studená a teplá voda a čtyři indikátory topení E-ITN 40 v Home Assistantu přes jeden ESP32-C3 + CC1101.**
 Příjem rádiových telegramů Apator AT-WMBUS-16-2 na 868,95 MHz, firmware ESPHome,
-vlastní integrace pro HACS a volitelné denní/měsíční součty.
+vlastní integrace pro HACS, volitelné denní/měsíční součty vody a rozšířená karta topení.
+
+## Nové ve verzi 1.1.0
+
+**[Rozšíření o topení: fotografie, identifikace, instalace a entity](docs/TOPENI.md)**.
+Přijímač současně čte vodoměry v T1 a čtyři E-ITN 40 v C1. Ověřené roční náměry,
+průměry teploty okolí, data a diagnostika. Bez zásahu do indikátorů a bez dalšího rádia.
+HACS integrace nově nabízí volitelný výběr ročních náměrů topení.
+
+- [Celý ESPHome YAML – voda + topení](esphome/vodomer-c3-topeni.yaml)
+- [Karta pro čtyři místnosti bez HACS frontend doplňků](home_assistant/dashboard-topeni.yaml)
+- [Migrace a seznam entit](docs/TOPENI.md#instalace-a-aktualizace)
+- [Release 1.1.0](https://github.com/jerzik/Vodomer_esp32_C3_CC1101/releases/tag/v1.1.0)
+
 
 ## Co projekt instaluje
 
@@ -13,6 +26,8 @@ vlastní integrace pro HACS a volitelné denní/měsíční součty.
 | `esphome/vodomer-c3.yaml` | ESPHome Device Builder → ESP32-C3 | Příjem CC1101 a dekódování dvou vodoměrů |
 | `custom_components/vodomer_esp32_c3_cc1101` | HACS → integrace | Přiřazení zdrojových senzorů v českém UI, oddělené celkové stavy |
 | `home_assistant/vodomer-package.yaml` | HA packages, volitelné | Denní a měsíční spotřeba pro oba vodoměry |
+| `esphome/vodomer-c3-topeni.yaml` | ESPHome → ESP32-C3 | Dva vodoměry + čtyři E-ITN 40, rozšířená varianta |
+| `home_assistant/dashboard-topeni.yaml` | Ruční karta dashboardu | Všechny známé údaje čtyř indikátorů topení |
 | `home_assistant/dashboard.yaml` | Ruční karta dashboardu | Ukázka zobrazení stavů a spotřeby |
 
 **HACS stáhne integraci do HA. Firmware ESP32 se nahrává zvlášť přes ESPHome.**
@@ -25,14 +40,12 @@ integrace musí být nejdříve připojena; tato doprovodná integrace nezíská
 - Home Assistant **2026.3.0 nebo novější** (lokální ikony integrací), HACS 2.x.
 - Referenční firmware: ESPHome **2026.9.1**, ESP-IDF.
 - ESP32-C3 Super Mini, CC1101 **pro 868 MHz**, odpovídající anténa a USB zdroj.
-- Jedna deska a jedno rádio stačí pro dvě měřidla ve stejném rádiovém pásmu.
+- Jedna deska a jedno rádio přijímají dva vodoměry a čtyři E-ITN 40 ve stejném pásmu.
 - Uživatel potvrdil funkční přímé zapojení pouze **ESP32-C3 + CC1101, bez přidaných odporů**.
 - Funkční příjem rádiových zpráv a příslušnost studeného modulu `04840742` jsou potvrzené.
-- **Teplá voda `04846989` zůstává kandidátem ze štítku.** V dosavadních předaných
-  výpisech nebyla potvrzena. Nulové AES klíče také zatím nejsou potvrzené dekódováním.
-- Všech 22 testů, HACS, hassfest a kompilace ESPHome prošly také na GitHub Actions.
-  Podrobné výsledky softwarových kontrol jsou v [docs/VALIDATION.md](docs/VALIDATION.md).
-  Nový firmware pro obě měřidla vyžaduje ověření příjmu a shody s mechanickými počítadly.
+- Oba vlastní vodoměry jsou potvrzené příjmem a dekódováním: studená `04840742`, teplá `04846989`. Nulové AES klíče fungují v této referenční instalaci, nejsou univerzálním klíčem.
+- Ve verzi 1.1.0 jsou v uživatelově provozním logu potvrzeny vodoměry i dekódování obýváku, kuchyně a ložnice; pokoj byl zachycen a dekódován v předchozím logu a replay testu. Náměry obýváku byly navíc porovnány s displejem na videu.
+- [Výsledky kontrol a jejich hranice](docs/VALIDATION.md). Přesné průměrovací období teplot zatím není doloženo; nejde o okamžitou teplotu radiátoru.
 
 ## Zapojení
 
@@ -78,10 +91,10 @@ pinu nebo jeho polohou v obrázku. S vodoměry není žádné kabelové spojení
 | Kanál v této instalaci | Rádiové ID | Ověření |
 |---|---|---|
 | Studená voda | `04840742` | Uživatel potvrdil vlastní modul; zachycený signál −36 dBm |
-| Teplá voda | `04846989` | Kandidát z dřívějšího štítku; ověřit na skutečném modulu a v logu |
+| Teplá voda | `04846989` | Potvrzeno dekódováním, 122,100 m³ v logu 6. 10. 2026 |
 
-Klíč `00000000000000000000000000000000` je veřejně používaný **zkušební kandidát**,
-ne klíč zjištěný z vašeho zařízení. Má-li modul individuální AES-128 klíč,
+Klíč `00000000000000000000000000000000` fungoval pro oba vodoměry v referenční instalaci.
+Pro jiné měřidlo je to pouze zkušební kandidát. Má-li modul individuální AES-128 klíč,
 vyžádejte jej od správce odečtu nebo dodavatele. Sériové číslo není klíč.
 Rádiový přijímač běžným příjmem tajný individuální klíč nezíská.
 
@@ -102,7 +115,7 @@ neověřuje klíč a nenahrazuje CRC kontrolu přijímače. Podrobnosti a omezen
    OTA heslo, **vlastní** ESPHome API klíč a klíče obou vodoměrů.
    ESPHome API klíč je Base64 a liší se od 32 hexadecimálních znaků AES klíče měřidla.
 4. V `substitutions` nastavte `cold_meter_id` a ověřené `hot_meter_id`.
-   Teplý kandidát je v ukázce jasně označený; do Energie jej zatím nepřidávejte.
+   Referenční ID jsou již potvrzená; ve vlastní instalaci je porovnejte se štítky.
 5. **Validate → Install**. První nahrání přes USB, další obvykle OTA.
    Pokud jste již měli šifrované API, ponechte jeho vlastní klíč. Při zavedení
    šifrování z původního nešifrovaného API aktualizujte připojení ESPHome v HA.
@@ -119,7 +132,7 @@ firmware, kterou nejprve ověřte. HACS tuto komponentu v ESPHome nespravuje.
 
 1. **HACS → nabídka ⋮ → Vlastní repozitáře**.
 2. URL: `https://github.com/jerzik/Vodomer_esp32_C3_CC1101`; typ **Integrace**.
-3. Vyhledejte **Vodoměr ESP32-C3 + CC1101**, stáhněte verzi **1.0.0** a restartujte HA.
+3. Vyhledejte **Vodoměr ESP32-C3 + CC1101**, stáhněte verzi **1.1.0** a restartujte HA.
 4. **Nastavení → Zařízení a služby → Přidat integraci → Vodoměr ESP32-C3 + CC1101**.
 5. Vyberte původní ESPHome senzor studené vody. Teplou vodu můžete zatím vynechat.
    Jakmile je identifikovaná a dekódovaná, přidejte její zdroj přes **Konfigurovat**.
